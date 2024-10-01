@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Hello I'm Libalpm a cybersecurity and network engineering based in Dayton, Ohio. Welcome to my blog">
+    <meta name="keywords" content="Libalpm, Cybersecurity, Network Engineer, Dayton Ohio, Technology Blog, Cybersecurity Insights, DPDK, XDP, Linux, Networking, Performance, Security, DDoS protection, Network Security, Firewall, IDS, IPS, Security,">
+    <meta name="author" content="Libalpm">
+    <link rel="icon" href="assets/libalpm.ico" type="image/x-icon"> 
+    <link rel="canonical" href="https://blog.libalpm.dev/">
+    <meta name="robots" content="index, follow">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Libalpm | XDP vs DPDK</title>
+    <link rel="stylesheet" href="assets/animate.min.css">
+    <link rel="stylesheet" href="assets/blog.css">
+</head>
+<body>
+    <div class="top-bar">
+        <div class="top-bar-content">
+            <a href="/" class="top-bar-logo">blog@libalpm:~$</a>
+            <nav class="top-bar-nav">
+                <ul>
+					<li><a href="https://libalpm.dev">Homepage</a></li>
+                    <li><a href="https://blog.libalpm.dev">Blog</a></li>
+                    <li><a href="https://libalpm.dev/libalpm-portfolio.html">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+    <div class="container">
+        <div class="main-content" id="articleContent">
+            <!-- Article will be inserted here -->
+        </div>
+    </div>
+    <footer class="footer">
+        <div class="footer-content">
+            <a href="/" class="footer-logo">Libalpm's Blog</a>
+            <nav class="footer-nav">
+                <ul>
+					<li><a href="https://libalpm.dev">Homepage</a></li>
+                    <li><a href="https://blog.libalpm.dev">Blog</a></li>
+                    <li><a href="https://libalpm.dev/libalpm-portfolio.html">About</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="social-icons">
+                <a href="https://github.com/libalpm64/" target="_blank"><img src="images/github.svg" alt="GitHub" style="filter: invert(1);"></a>
+                <a href="https://matrix.to/#/@libalpm:unredacted.org" target="_blank"><img src="images/matrix.svg" alt="Matrix" style="filter: invert(1);"></a>
+                <a href="@libalpm.01" target="_blank"><img src="images/signal.svg" alt="Signal" style="filter: invert(1);"></a>
+                <a href="https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2FUkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ%3D%40smp12.simplex.im%2FdSQn3kk0X5xnT1ILL78OnTWnEPpROENp%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAOITfCm8nnK-bSUYfpjEDm9e-eeUm8JtIH1aLH1ahKVQ%253D%26srv%3Die42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion" target="_blank"><img src="images/simplex.svg" alt="Simplex" style="filter: invert(1);"></a>
+            </div>
+            <div class="footer-bottom">
+                <p>
+                    Libalpm's blog Licensed under: 
+                    <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" style="display: inline-flex; align-items: center; text-decoration: none;">
+                        <span style="margin-right: 10px;">CC0 1.0 Universal (No Copyright)</span>
+                        <img src="https://licensebuttons.net/p/zero/1.0/88x31.png" alt="CC0 1.0 Universal (No Copyright)" style="max-width: 60px; height: auto;">
+                    </a>
+                </p>
+            </div>
+        </div>
+    </footer>
+	<script>
+		async function loadArticle(articleId) {
+			try {
+				const response = await fetch('assets/blog-articles-json.json');
+				const data = await response.json();
+
+				const article = data.articles.find(article => article.id === articleId);
+				if (!article) {
+					throw new Error(`Article with ID ${articleId} not found.`);
+				}
+
+				const articleContent = document.getElementById('articleContent');
+				articleContent.innerHTML = `
+					<header>
+						<h1 class="animate__animated animate__fadeInDown">${article.title}</h1>
+					</header>
+					<div class="banner-container">
+						<div class="banner animate__animated animate__fadeIn animate__delay-1s" style="margin-bottom: 20px;">
+							<img src="${article.bannerImage}" alt="Banner Image" style="width: 100%; height: 400px; object-fit: cover; border-radius: 15px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
+						</div>
+					</div>
+					<div class="post-meta" style="margin-top: 20px;">
+						Published on ${article.date} | By ${article.author}
+					</div>
+					<div class="post-content">
+						${article.content.map(item => {
+							switch(item.type) {
+								case 'h2':
+									return `<h2>${item.content}</h2>`;
+								case 'h3':
+									return `<h3>${item.content}</h3>`;
+								case 'p':
+									return `<p>${item.content}</p>`;
+								case 'ul':
+									return `
+										<ul>
+											${item.content.map(li => `<li>${li}</li>`).join('')}
+										</ul>
+									`;
+								case 'code':
+									return `
+										<div class="code-block">
+											<pre><code class="language-bash">${item.content}</code></pre>
+											<button class="copy-button" onclick="copyToClipboard(this)">Copy</button>
+										</div>
+									`;
+								default:
+									return '';
+							}
+						}).join('')}
+					</div>
+				`;
+
+			} catch (error) {
+				console.error('Error loading article:', error);
+			}
+		}
+
+		function copyToClipboard(button) {
+			const codeBlock = button.previousElementSibling.querySelector('code');
+			const textArea = document.createElement('textarea');
+			textArea.value = codeBlock.textContent;
+			document.body.appendChild(textArea);
+			textArea.select();
+			document.execCommand('copy');
+			document.body.removeChild(textArea);
+			button.textContent = 'Copied!';
+			setTimeout(() => {
+				button.textContent = 'Copy';
+			}, 2000);
+		}
+		window.addEventListener('load', () => loadArticle(4));
+	</script>
+</body>
+</html>
